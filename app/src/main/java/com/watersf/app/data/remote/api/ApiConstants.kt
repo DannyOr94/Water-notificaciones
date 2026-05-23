@@ -1,8 +1,8 @@
 package com.watersf.app.data.remote.api
 
 object ApiConstants {
-    // La URL base para el servidor de producción remoto
-    const val BASE_URL = "http://212.38.95.11:3000/"
+    // La URL base para desarrollo con dispositivo físico local (misma red Wi-Fi)
+    const val BASE_URL = "http://192.168.100.232:3000/"
 
     // Los endpoints relativos NO deben comenzar con barra diagonal (/) en Retrofit
     const val LOGIN_ENDPOINT = "auth/login"

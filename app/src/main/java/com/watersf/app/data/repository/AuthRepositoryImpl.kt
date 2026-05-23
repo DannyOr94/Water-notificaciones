@@ -24,7 +24,7 @@ class AuthRepositoryImpl @Inject constructor(
                 val responseToken = body?.token ?: body?.accessToken
 
                 if (body != null && !responseToken.isNullOrEmpty()) {
-                    // 1. Guardamos el token real de la raíz del JSON sin que sea NULL
+                    // 1. Guardamos el token real de la sesión
                     encryptedPrefsManager.saveToken(responseToken)
 
                     // 2. Convertimos el JwtUser del DTO al User del Dominio de la App
@@ -41,7 +41,7 @@ class AuthRepositoryImpl @Inject constructor(
 
                     Result.success(domainUser)
                 } else {
-                    Result.failure(Exception("El servidor no devolvió un token válido"))
+                    Result.failure(Exception("El servidor no devolvió un token de acceso válido"))
                 }
             } else {
                 Result.failure(Exception("Credenciales incorrectas. Verifique sus datos."))
