@@ -44,7 +44,6 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun syncNotifications(): Result<Unit> {
         return try {
-            // Forzamos la llamada al servicio de notificaciones ignorando validación local previa de usuario
             val response = apiService.getMyNotifications()
 
             if (response.isSuccessful && response.body() != null) {
@@ -53,50 +52,10 @@ class NotificationRepositoryImpl @Inject constructor(
                 notificationDao.insertNotifications(entities)
                 Result.success(Unit)
             } else {
-                throw Exception("Error de respuesta del servidor: ${response.code()}")
+                Result.failure(Exception("Error de sincronización con el servidor: ${response.code()}"))
             }
         } catch (e: Exception) {
-            // Si hay fallo de red o el token es inválido/nulo, cargamos las notificaciones locales de emergencia
-            val dummyNotifications = listOf(
-                com.watersf.app.data.local.entity.NotificationEntity(
-                    id = "emergency_1",
-                    title = "Mantenimiento de tuberías - ASADA",
-                    message = "Se informa de labores preventivas en la red principal. Posible baja presión.",
-                    module = "mantenimiento",
-                    type = "GENERAL",
-                    targetId = null,
-                    createdAt = "2026-05-23T10:00:00Z",
-                    isRead = false,
-                    priority = "alta",
-                    audience = null
-                ),
-                com.watersf.app.data.local.entity.NotificationEntity(
-                    id = "emergency_2",
-                    title = "Corte programado en Nicoya",
-                    message = "Suspensión temporal del servicio de agua de 1:00 PM a 4:00 PM por reparaciones.",
-                    module = "suspension",
-                    type = "GENERAL",
-                    targetId = null,
-                    createdAt = "2026-05-23T10:15:00Z",
-                    isRead = false,
-                    priority = "media",
-                    audience = null
-                ),
-                com.watersf.app.data.local.entity.NotificationEntity(
-                    id = "emergency_3",
-                    title = "Facturación Disponible",
-                    message = "Ya puede consultar y cancelar el recibo del mes de Mayo. Evite recargos.",
-                    module = "facturas",
-                    type = "FACTURA",
-                    targetId = null,
-                    createdAt = "2026-05-23T10:30:00Z",
-                    isRead = false,
-                    priority = "baja",
-                    audience = null
-                )
-            )
-            notificationDao.insertNotifications(dummyNotifications)
-            Result.success(Unit)
+            Result.failure(e)
         }
     }
 
