@@ -9,5 +9,6 @@ data class NotificationListState(
     val filterIsRead: Boolean? = null,
     val filterPriority: String? = null,
     val isOffline: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val newNotificationReceived: Notification? = null
 )

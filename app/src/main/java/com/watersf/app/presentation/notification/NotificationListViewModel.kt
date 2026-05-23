@@ -29,6 +29,7 @@ class NotificationListViewModel @Inject constructor(
     private val _filterModule = MutableStateFlow<String?>(null)
     private val _filterIsRead = MutableStateFlow<Boolean?>(null)
     private val _filterPriority = MutableStateFlow<String?>(null)
+    private val _newNotificationReceived = MutableStateFlow<Notification?>(null)
 
     /**
      * Une los flujos de filtros y carga reactivamente las notificaciones de Room.
@@ -47,7 +48,7 @@ class NotificationListViewModel @Inject constructor(
      * Estado consolidado expuesto a Compose UI
      */
     val state: StateFlow<NotificationListState> = kotlinx.coroutines.flow.combine(
-        listOf(_isLoading, _notifications, _filterModule, _filterIsRead, _filterPriority, _isOffline, _error)
+        listOf(_isLoading, _notifications, _filterModule, _filterIsRead, _filterPriority, _isOffline, _error, _newNotificationReceived)
     ) { array ->
         NotificationListState(
             isLoading = array[0] as Boolean,
@@ -56,7 +57,8 @@ class NotificationListViewModel @Inject constructor(
             filterIsRead = array[3] as Boolean?,
             filterPriority = array[4] as String?,
             isOffline = array[5] as Boolean,
-            errorMessage = array[6] as String?
+            errorMessage = array[6] as String?,
+            newNotificationReceived = array[7] as Notification?
         )
     }.stateIn(
         scope = viewModelScope,
@@ -65,7 +67,29 @@ class NotificationListViewModel @Inject constructor(
     )
 
     init {
-        sync()
+        startPolling()
+        listenForNewNotifications()
+    }
+
+    private fun startPolling() {
+        viewModelScope.launch {
+            while (true) {
+                sync()
+                kotlinx.coroutines.delay(10000) // Polling cada 10 segundos
+            }
+        }
+    }
+
+    private fun listenForNewNotifications() {
+        viewModelScope.launch {
+            repository.newNotificationFlow.collect { notification ->
+                _newNotificationReceived.value = notification
+            }
+        }
+    }
+
+    fun dismissNewNotificationReceived() {
+        _newNotificationReceived.value = null
     }
 
     fun sync() {

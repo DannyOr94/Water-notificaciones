@@ -7,6 +7,9 @@
     <string name="filter_unread">No leídas</string>
     <string name="filter_high_priority">Prioridad Alta</string>
     <string name="filter_bills">Facturación</string>
+    <string name="filter_reports">Reportes</string>
+    <string name="filter_requests">Solicitudes</string>
+    <string name="filter_tasks">Tareas</string>
     <string name="empty_notifications_title">Sin notificaciones</string>
     <string name="empty_notifications_desc">No hay alertas que coincidan con tus filtros.</string>
     <string name="offline_mode_active">Modo sin conexión activo</string>

@@ -4,6 +4,8 @@ import com.watersf.app.domain.model.Notification
 import kotlinx.coroutines.flow.Flow
 
 interface NotificationRepository {
+    val newNotificationFlow: Flow<Notification>
+
     fun getNotificationsFlow(
         priority: String? = null,
         isRead: Boolean? = null,

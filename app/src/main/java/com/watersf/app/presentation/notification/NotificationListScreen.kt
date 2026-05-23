@@ -37,25 +37,137 @@ fun NotificationListScreen(
     onLogout: () -> Unit
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+    var selectedNotificationForDialog by remember { mutableStateOf<Notification?>(null) }
 
-    // Sincronización inicial automática al entrar a la pantalla
-    LaunchedEffect(Unit) {
-        viewModel.sync()
+    Box(modifier = Modifier.fillMaxSize()) {
+        NotificationListContent(
+            uiState = uiState,
+            onRefresh = { viewModel.sync() },
+            onNotificationClick = { id ->
+                viewModel.markAsRead(id)
+                val clickedNotif = uiState.notifications.find { it.id == id }
+                selectedNotificationForDialog = clickedNotif
+                onNotificationClick(id)
+            },
+            onFilterIsRead = { viewModel.setFilterIsRead(it) },
+            onFilterPriority = { viewModel.setFilterPriority(it) },
+            onFilterModule = { viewModel.setFilterModule(it) },
+            onClearFilters = { viewModel.clearFilters() },
+            onLogout = onLogout
+        )
+
+        // Banner flotante para alertas en tiempo real
+        uiState.newNotificationReceived?.let { newNotif ->
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF131C33)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = MaterialTheme.shapes.medium,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.NotificationsNone,
+                        contentDescription = null,
+                        tint = Color(0xFF38BDF8),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "¡Nueva alerta recibida!",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF38BDF8),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = newNotif.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = newNotif.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8),
+                            maxLines = 2
+                        )
+                    }
+                    TextButton(onClick = { viewModel.dismissNewNotificationReceived() }) {
+                        Text("OK", color = Color(0xFF38BDF8))
+                    }
+                }
+            }
+        }
+
+        // Dialog flotante con los detalles completos de la alerta al hacer clic
+        selectedNotificationForDialog?.let { notification ->
+            AlertDialog(
+                onDismissRequest = { selectedNotificationForDialog = null },
+                title = {
+                    Text(
+                        text = notification.title,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = notification.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFFE2E8F0)
+                        )
+                        HorizontalDivider(color = Color(0xFF1E294B))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Módulo: ${notification.module}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF38BDF8)
+                            )
+                            Text(
+                                text = "Prioridad: ${notification.priority.value.uppercase()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = when (notification.priority.value.lowercase()) {
+                                    "alta" -> Color(0xFFF87171)
+                                    "media" -> Color(0xFFFBBF24)
+                                    else -> Color(0xFF34D399)
+                                }
+                            )
+                        }
+                        Text(
+                            text = "Fecha: ${notification.createdAt}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { selectedNotificationForDialog = null }) {
+                        Text("Cerrar", color = Color(0xFF38BDF8))
+                    }
+                },
+                containerColor = Color(0xFF131C33),
+                titleContentColor = Color.White,
+                textContentColor = Color(0xFFE2E8F0)
+            )
+        }
     }
-
-    NotificationListContent(
-        uiState = uiState,
-        onRefresh = { viewModel.sync() },
-        onNotificationClick = { id ->
-            viewModel.markAsRead(id)
-            onNotificationClick(id)
-        },
-        onFilterIsRead = { viewModel.setFilterIsRead(it) },
-        onFilterPriority = { viewModel.setFilterPriority(it) },
-        onFilterModule = { viewModel.setFilterModule(it) },
-        onClearFilters = { viewModel.clearFilters() },
-        onLogout = onLogout
-    )
 }
 
 /**
@@ -149,7 +261,9 @@ fun NotificationListContent(
                     onRefresh = onRefresh,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    if (uiState.notifications.isEmpty() && !uiState.isLoading) {
+                    if (uiState.isLoading && uiState.notifications.isEmpty()) {
+                        ShimmerNotificationsList()
+                    } else if (uiState.notifications.isEmpty()) {
                         EmptyNotificationsView(modifier = Modifier.align(Alignment.Center))
                     } else {
                         NotificationsLazyList(
@@ -221,11 +335,11 @@ private fun FilterSection(
             )
         }
         item {
-            val isSelected = uiState.filterModule == "facturas"
+            val isSelected = uiState.filterModule == "Reportes"
             FilterChip(
                 selected = isSelected,
-                onClick = { onFilterModule(if (uiState.filterModule == "facturas") null else "facturas") },
-                label = { Text(stringResource(R.string.filter_bills)) },
+                onClick = { onFilterModule(if (uiState.filterModule == "Reportes") null else "Reportes") },
+                label = { Text(stringResource(R.string.filter_reports)) },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Color(0xFF131C33),
                     selectedContainerColor = Color(0xFF1E294B),
@@ -241,6 +355,94 @@ private fun FilterSection(
                     selectedBorderWidth = 1.dp
                 )
             )
+        }
+        item {
+            val isSelected = uiState.filterModule == "Solicitudes"
+            FilterChip(
+                selected = isSelected,
+                onClick = { onFilterModule(if (uiState.filterModule == "Solicitudes") null else "Solicitudes") },
+                label = { Text(stringResource(R.string.filter_requests)) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color(0xFF131C33),
+                    selectedContainerColor = Color(0xFF1E294B),
+                    labelColor = Color(0xFF94A3B8),
+                    selectedLabelColor = Color(0xFF38BDF8)
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = Color(0xFF222D4A),
+                    selectedBorderColor = Color(0xFF38BDF8),
+                    borderWidth = 1.dp,
+                    selectedBorderWidth = 1.dp
+                )
+            )
+        }
+        item {
+            val isSelected = uiState.filterModule == "Tareas"
+            FilterChip(
+                selected = isSelected,
+                onClick = { onFilterModule(if (uiState.filterModule == "Tareas") null else "Tareas") },
+                label = { Text(stringResource(R.string.filter_tasks)) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color(0xFF131C33),
+                    selectedContainerColor = Color(0xFF1E294B),
+                    labelColor = Color(0xFF94A3B8),
+                    selectedLabelColor = Color(0xFF38BDF8)
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = isSelected,
+                    borderColor = Color(0xFF222D4A),
+                    selectedBorderColor = Color(0xFF38BDF8),
+                    borderWidth = 1.dp,
+                    selectedBorderWidth = 1.dp
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShimmerNotificationsList() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        repeat(5) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF131C33).copy(alpha = 0.6f)
+                ),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.4f)
+                            .height(16.dp)
+                            .background(Color(0xFF1E294B), shape = MaterialTheme.shapes.small)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(14.dp)
+                            .background(Color(0xFF1E294B), shape = MaterialTheme.shapes.small)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .height(12.dp)
+                            .background(Color(0xFF1E294B), shape = MaterialTheme.shapes.small)
+                    )
+                }
+            }
         }
     }
 }
@@ -294,3 +496,4 @@ private fun EmptyNotificationsView(modifier: Modifier = Modifier) {
         )
     }
 }
+
