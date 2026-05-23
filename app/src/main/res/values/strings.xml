@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Water Notificaciones</string>
+    <string name="nav_title_notifications">Alertas Water-SF</string>
+    <string name="sync_notifications">Sincronizar</string>
+    <string name="clear_filters">Limpiar filtros</string>
+    <string name="filter_unread">No leídas</string>
+    <string name="filter_high_priority">Prioridad Alta</string>
+    <string name="filter_bills">Facturación</string>
+    <string name="empty_notifications_title">Sin notificaciones</string>
+    <string name="empty_notifications_desc">No hay alertas que coincidan con tus filtros.</string>
+    <string name="offline_mode_active">Modo sin conexión activo</string>
+</resources>
