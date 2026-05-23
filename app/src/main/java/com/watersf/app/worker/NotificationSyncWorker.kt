@@ -33,7 +33,7 @@ class NotificationSyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
-        const val CHANNEL_ID = "water_sf_notifications_channel"
+        const val CHANNEL_ID = "water_sf_alerts_channel_v3"
         const val WORK_NAME = "WaterSfSyncWorker"
 
         /**
@@ -100,18 +100,19 @@ class NotificationSyncWorker @AssistedInject constructor(
 
         // Crear el canal de notificaciones en Android Oreo (API 26) o superior
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Notificaciones Water-SF"
+            val name = "Alertas Water-SF"
             val descriptionText = "Canal para alertas de cortes de agua, averías y facturación"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
                 enableLights(true)
                 enableVibration(true)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
         }
 
-        // Intent para abrir la app al hacer clic (se asume MainActivity en la raíz del proyecto)
+        // Intent para abrir la app al hacer clic
         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -125,7 +126,7 @@ class NotificationSyncWorker @AssistedInject constructor(
 
         // Construir la notificación con un diseño limpio y moderno
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Fallback al icono del sistema, reemplazar en producción
+            .setSmallIcon(com.watersf.app.R.drawable.ic_app_launcher)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -137,7 +138,6 @@ class NotificationSyncWorker @AssistedInject constructor(
 
         // Verificar permisos en Android 13+ (API 33+) antes de publicar
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // En un flujo normal la UI solicita este permiso, aquí se asume aprobado o delegación del S.O.
             notificationManager.notify(notificationId, notification)
         } else {
             NotificationManagerCompat.from(context).notify(notificationId, notification)

@@ -1,8 +1,14 @@
 package com.watersf.app.presentation.notification
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
+import android.os.Build
 import android.provider.Settings
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watersf.app.domain.model.Notification
@@ -90,7 +96,52 @@ class NotificationListViewModel @Inject constructor(
             repository.newNotificationFlow.collect { notification ->
                 _newNotificationReceived.value = notification
                 playAlertSound()
+                showSystemNotification(notification)
             }
+        }
+    }
+
+    private fun showSystemNotification(notification: Notification) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channelId = "water_sf_alerts_channel_v3"
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val name = "Alertas Water-SF"
+                val descriptionText = "Canal para alertas de cortes de agua, averías y facturación"
+                val importance = NotificationManager.IMPORTANCE_HIGH
+                val channel = NotificationChannel(channelId, name, importance).apply {
+                    description = descriptionText
+                    enableLights(true)
+                    enableVibration(true)
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+            
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            val builder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(com.watersf.app.R.drawable.ic_app_launcher)
+                .setContentTitle(notification.title)
+                .setContentText(notification.message)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(notification.message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+            
+            notificationManager.notify(notification.id.hashCode(), builder.build())
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

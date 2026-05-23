@@ -177,16 +177,29 @@ private fun formatNotificationMessage(notification: Notification): String {
 
 private fun formatDateTime(isoString: String): String {
     return try {
-        val normalized = if (!isoString.contains("Z") && !isoString.contains("+") && isoString.contains("T")) {
-            isoString + "Z"
+        val cleanIso = if (isoString.contains("T")) {
+            val datePart = isoString.substringBefore("T")
+            val timePart = isoString.substringAfter("T")
+                .substringBefore("Z")
+                .substringBefore("+")
+            val timeWithoutOffset = if (timePart.contains("-")) {
+                timePart.substringBeforeLast("-")
+            } else {
+                timePart
+            }
+            "${datePart}T${timeWithoutOffset}"
         } else {
             isoString
         }
-        val instant = Instant.parse(normalized)
-        val crZone = ZoneId.of("America/Costa_Rica")
-        val crDateTime = instant.atZone(crZone)
+
         val formatter = DateTimeFormatter.ofPattern("dd MMM, hh:mm a", Locale("es", "CR"))
-        crDateTime.format(formatter)
+        try {
+            val ldt = java.time.LocalDateTime.parse(cleanIso)
+            ldt.format(formatter)
+        } catch (e: Exception) {
+            val date = java.time.LocalDate.parse(cleanIso)
+            date.format(DateTimeFormatter.ofPattern("dd MMM", Locale("es", "CR")))
+        }
     } catch (e: Exception) {
         isoString
     }

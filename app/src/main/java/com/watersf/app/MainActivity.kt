@@ -1,5 +1,6 @@
 package com.watersf.app
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,9 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.WorkManager
 import com.watersf.app.data.security.EncryptedPrefsManager
 import com.watersf.app.presentation.auth.LoginScreen
 import com.watersf.app.presentation.notification.NotificationListScreen
+import com.watersf.app.worker.NotificationSyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -26,6 +30,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Solicitar permisos de notificación a nivel de S.O. (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+
+        // 2. Inicializar y programar el trabajador periódico de sincronización de fondo
+        try {
+            val workRequest = NotificationSyncWorker.buildWorkRequest()
+            WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+                NotificationSyncWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContent {
             var isLoggedIn by remember { mutableStateOf(prefsManager.getToken() != null) }
 
