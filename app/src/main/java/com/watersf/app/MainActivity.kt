@@ -1,11 +1,13 @@
 package com.watersf.app
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,6 +20,7 @@ import androidx.work.WorkManager
 import com.watersf.app.data.security.EncryptedPrefsManager
 import com.watersf.app.presentation.auth.LoginScreen
 import com.watersf.app.presentation.notification.NotificationListScreen
+import com.watersf.app.service.NotificationForegroundService
 import com.watersf.app.worker.NotificationSyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -56,6 +59,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             var isLoggedIn by remember { mutableStateOf(prefsManager.getToken() != null) }
 
+            LaunchedEffect(isLoggedIn) {
+                val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
+                if (isLoggedIn) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
+                } else {
+                    stopService(serviceIntent)
+                }
+            }
+
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = Color(0xFF0A0F1D) // Fondo azul oscuro global
@@ -67,6 +83,9 @@ class MainActivity : ComponentActivity() {
                             // Navegación adicional si fuera necesaria
                         },
                         onLogout = {
+                            val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
+                            stopService(serviceIntent)
+                            
                             prefsManager.clearSession()
                             notificationRepository.resetSyncState()
                             isLoggedIn = false

@@ -20,7 +20,7 @@ interface WaterApiService {
     @GET("notifications/me")
     suspend fun getMyNotifications(): Response<List<NotificationDto>>
 
-    @GET("cech-proyect/notifications")
+    @GET("notifications/me")
     suspend fun getAdminNotifications(): Response<List<NotificationDto>>
 
     @PATCH("notifications/{id}/read")
