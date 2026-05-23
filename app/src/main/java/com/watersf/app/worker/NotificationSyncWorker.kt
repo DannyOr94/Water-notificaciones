@@ -76,7 +76,7 @@ class NotificationSyncWorker @AssistedInject constructor(
                     val alreadyExists = notificationDao.exists(dto.id)
                     if (!alreadyExists) {
                         // 3. Si es un registro nuevo, insertar localmente
-                        notificationDao.insertNotifications(listOf(dto.toEntity()))
+                        notificationDao.insertOrUpdateNotifications(listOf(dto.toEntity()))
                         
                         // 4. Disparar notificación del sistema Android
                         showSystemNotification(dto.id.hashCode(), dto.title, dto.message)

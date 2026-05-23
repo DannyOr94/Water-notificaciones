@@ -39,7 +39,21 @@ interface NotificationDao {
     suspend fun getNotificationById(id: String): NotificationEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertNotifications(notifications: List<NotificationEntity>)
+    suspend fun insertDirectly(notification: NotificationEntity)
+
+    @androidx.room.Transaction
+    suspend fun insertOrUpdateNotifications(notifications: List<NotificationEntity>) {
+        for (notification in notifications) {
+            val existing = getNotificationById(notification.id)
+            if (existing != null) {
+                // Preservar el estado de lectura local
+                val updated = notification.copy(isRead = existing.isRead)
+                insertDirectly(updated)
+            } else {
+                insertDirectly(notification)
+            }
+        }
+    }
 
     @Query("UPDATE notifications SET isRead = 1 WHERE id = :id")
     suspend fun markAsRead(id: String)

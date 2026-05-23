@@ -7,6 +7,7 @@ import com.watersf.app.data.remote.dto.toEntity
 import com.watersf.app.data.security.EncryptedPrefsManager
 import com.watersf.app.domain.model.Notification
 import com.watersf.app.domain.repository.NotificationRepository
+import com.watersf.app.domain.model.UserType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -48,9 +49,20 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun syncNotifications(): Result<Unit> {
         return try {
-            if (prefsManager.getToken() == null) return Result.success(Unit)
+            val user = prefsManager.getUser() ?: return Result.success(Unit)
 
-            val response = apiService.getMyNotifications()
+            val response = when (user.type) {
+                UserType.ADMINISTRADOR,
+                UserType.ADMINISTRATIVO,
+                UserType.SECRETARIO,
+                UserType.JUNTA -> {
+                    apiService.getAdminNotifications()
+                }
+                UserType.ABONADO,
+                UserType.FONTANERO -> {
+                    apiService.getMyNotifications()
+                }
+            }
 
             if (response.isSuccessful && response.body() != null) {
                 val remoteNotifications = response.body()!!
@@ -68,8 +80,8 @@ class NotificationRepositoryImpl @Inject constructor(
                     seenNotificationIds.add(entity.id)
                 }
 
-                // Guardamos en la base de datos local
-                notificationDao.insertNotifications(entities)
+                // Guardamos en la base de datos local preservando el estado de lectura anterior
+                notificationDao.insertOrUpdateNotifications(entities)
 
                 if (hasNew && latestNewNotification != null && !isFirstSync) {
                     _newNotificationFlow.emit(latestNewNotification)
