@@ -16,6 +16,7 @@ import com.watersf.app.domain.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +41,10 @@ class NotificationListViewModel @Inject constructor(
     private val _filterModule = MutableStateFlow<String?>(null)
     private val _filterIsRead = MutableStateFlow<Boolean?>(null)
     private val _filterPriority = MutableStateFlow<String?>(null)
-    private val _newNotificationReceived = MutableStateFlow<Notification?>(null)
+
+    // Flujo para notificaciones entrantes como eventos de un solo uso
+    private val _newNotificationEvent = kotlinx.coroutines.flow.MutableSharedFlow<Notification>(extraBufferCapacity = 64)
+    val newNotificationEvent: Flow<Notification> = _newNotificationEvent
 
     /**
      * Une los flujos de filtros y carga reactivamente las notificaciones de Room.
@@ -59,7 +63,7 @@ class NotificationListViewModel @Inject constructor(
      * Estado consolidado expuesto a Compose UI
      */
     val state: StateFlow<NotificationListState> = kotlinx.coroutines.flow.combine(
-        listOf(_isLoading, _notifications, _filterModule, _filterIsRead, _filterPriority, _isOffline, _error, _newNotificationReceived)
+        listOf(_isLoading, _notifications, _filterModule, _filterIsRead, _filterPriority, _isOffline, _error)
     ) { array ->
         NotificationListState(
             isLoading = array[0] as Boolean,
@@ -68,8 +72,7 @@ class NotificationListViewModel @Inject constructor(
             filterIsRead = array[3] as Boolean?,
             filterPriority = array[4] as String?,
             isOffline = array[5] as Boolean,
-            errorMessage = array[6] as String?,
-            newNotificationReceived = array[7] as Notification?
+            errorMessage = array[6] as String?
         )
     }.stateIn(
         scope = viewModelScope,
@@ -94,7 +97,7 @@ class NotificationListViewModel @Inject constructor(
     private fun listenForNewNotifications() {
         viewModelScope.launch {
             repository.newNotificationFlow.collect { notification ->
-                _newNotificationReceived.value = notification
+                _newNotificationEvent.emit(notification)
                 playAlertSound()
                 showSystemNotification(notification)
             }
@@ -157,8 +160,8 @@ class NotificationListViewModel @Inject constructor(
         }
     }
 
-    fun dismissNewNotificationReceived() {
-        _newNotificationReceived.value = null
+    fun resetSyncState() {
+        repository.resetSyncState()
     }
 
     fun sync(isBackground: Boolean = false) {

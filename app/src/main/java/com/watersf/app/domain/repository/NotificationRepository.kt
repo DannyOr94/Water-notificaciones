@@ -17,4 +17,6 @@ interface NotificationRepository {
     suspend fun syncNotifications(): Result<Unit>
 
     suspend fun markAsRead(id: String): Result<Unit>
+
+    fun resetSyncState()
 }

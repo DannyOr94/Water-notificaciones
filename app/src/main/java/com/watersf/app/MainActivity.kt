@@ -28,6 +28,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var prefsManager: EncryptedPrefsManager
 
+    @Inject
+    lateinit var notificationRepository: com.watersf.app.domain.repository.NotificationRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -65,6 +68,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onLogout = {
                             prefsManager.clearSession()
+                            notificationRepository.resetSyncState()
                             isLoggedIn = false
                         }
                     )
@@ -72,6 +76,7 @@ class MainActivity : ComponentActivity() {
                     LoginScreen(
                         viewModel = hiltViewModel(),
                         onLoginSuccess = { user ->
+                            notificationRepository.resetSyncState()
                             isLoggedIn = true
                         }
                     )

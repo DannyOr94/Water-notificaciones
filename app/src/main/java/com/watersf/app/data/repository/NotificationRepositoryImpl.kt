@@ -48,16 +48,7 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun syncNotifications(): Result<Unit> {
         return try {
-            // Detectar si la sesión cambió o se cerró para reiniciar el estado de sincronización
-            val currentToken = prefsManager.getToken()
-            if (currentToken != lastSessionToken) {
-                isFirstSync = true
-                seenNotificationIds.clear()
-                lastSessionToken = currentToken
-            }
-            if (currentToken == null) {
-                return Result.success(Unit)
-            }
+            if (prefsManager.getToken() == null) return Result.success(Unit)
 
             val response = apiService.getMyNotifications()
 
@@ -109,5 +100,11 @@ class NotificationRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override fun resetSyncState() {
+        isFirstSync = true
+        seenNotificationIds.clear()
+        lastSessionToken = null
     }
 }

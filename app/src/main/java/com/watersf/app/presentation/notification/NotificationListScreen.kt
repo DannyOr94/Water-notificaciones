@@ -73,10 +73,12 @@ fun NotificationListScreen(
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     var selectedNotificationForDialog by remember { mutableStateOf<Notification?>(null) }
     var showBanner by remember { mutableStateOf(false) }
+    var latestNotification by remember { mutableStateOf<Notification?>(null) }
 
-    // Activamos el banner de forma controlada cuando llega una nueva notificación
-    LaunchedEffect(uiState.newNotificationReceived) {
-        if (uiState.newNotificationReceived != null) {
+    // Escuchar el evento de nueva notificación de forma reactiva y limpia (one-off event)
+    LaunchedEffect(viewModel) {
+        viewModel.newNotificationEvent.collect { notification: Notification ->
+            latestNotification = notification
             showBanner = true
         }
     }
@@ -99,8 +101,8 @@ fun NotificationListScreen(
         )
 
         // Banner flotante para alertas en tiempo real controlado por showBanner (In-App)
-        if (showBanner && uiState.newNotificationReceived != null) {
-            val newNotif = uiState.newNotificationReceived!!
+        if (showBanner && latestNotification != null) {
+            val newNotif = latestNotification!!
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF131C33)
@@ -147,7 +149,6 @@ fun NotificationListScreen(
                     }
                     TextButton(onClick = {
                         showBanner = false
-                        viewModel.dismissNewNotificationReceived()
                     }) {
                         Text("OK", color = Color(0xFF38BDF8))
                     }
