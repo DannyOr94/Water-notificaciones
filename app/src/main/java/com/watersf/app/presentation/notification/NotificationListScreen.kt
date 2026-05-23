@@ -25,6 +25,27 @@ import com.watersf.app.R
 import com.watersf.app.domain.model.Notification
 import com.watersf.app.presentation.notification.components.NotificationCard
 import com.watersf.app.presentation.notification.components.OfflineBanner
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private fun formatCRDateTime(isoString: String): String {
+    return try {
+        val normalized = if (!isoString.contains("Z") && !isoString.contains("+") && isoString.contains("T")) {
+            isoString + "Z"
+        } else {
+            isoString
+        }
+        val instant = Instant.parse(normalized)
+        val crZone = ZoneId.of("America/Costa_Rica")
+        val crDateTime = instant.atZone(crZone)
+        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a", Locale("es", "CR"))
+        crDateTime.format(formatter)
+    } catch (e: Exception) {
+        isoString
+    }
+}
 
 /**
  * [NotificationListScreen] - Versión STATEFUL.
@@ -38,6 +59,14 @@ fun NotificationListScreen(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     var selectedNotificationForDialog by remember { mutableStateOf<Notification?>(null) }
+    var showBanner by remember { mutableStateOf(false) }
+
+    // Activamos el banner de forma controlada cuando llega una nueva notificación
+    LaunchedEffect(uiState.newNotificationReceived) {
+        if (uiState.newNotificationReceived != null) {
+            showBanner = true
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NotificationListContent(
@@ -56,8 +85,9 @@ fun NotificationListScreen(
             onLogout = onLogout
         )
 
-        // Banner flotante para alertas en tiempo real
-        uiState.newNotificationReceived?.let { newNotif ->
+        // Banner flotante para alertas en tiempo real controlado por showBanner (In-App)
+        if (showBanner && uiState.newNotificationReceived != null) {
+            val newNotif = uiState.newNotificationReceived!!
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF131C33)
@@ -76,10 +106,10 @@ fun NotificationListScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.NotificationsNone,
-                        contentDescription = null,
-                        tint = Color(0xFF38BDF8),
-                        modifier = Modifier.size(28.dp)
+                          imageVector = Icons.Default.NotificationsNone,
+                          contentDescription = null,
+                          tint = Color(0xFF38BDF8),
+                          modifier = Modifier.size(28.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -102,7 +132,10 @@ fun NotificationListScreen(
                             maxLines = 2
                         )
                     }
-                    TextButton(onClick = { viewModel.dismissNewNotificationReceived() }) {
+                    TextButton(onClick = {
+                        showBanner = false
+                        viewModel.dismissNewNotificationReceived()
+                    }) {
                         Text("OK", color = Color(0xFF38BDF8))
                     }
                 }
@@ -151,7 +184,7 @@ fun NotificationListScreen(
                             )
                         }
                         Text(
-                            text = "Fecha: ${notification.createdAt}",
+                            text = "Fecha: ${formatCRDateTime(notification.createdAt)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF94A3B8)
                         )

@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -89,29 +91,44 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .padding(24.dp)
         ) {
-            // Header del App (Logo estilizado)
-            Icon(
-                imageVector = Icons.Default.WaterDrop,
-                contentDescription = "Water-SF Logo",
-                tint = Color(0xFF38BDF8), // Cian brillante
+            // Header del App (Logo modernizado con gradiente premium)
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(72.dp)
-                    .padding(bottom = 8.dp)
-            )
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
+                        )
+                    )
+                    .border(2.dp, Color(0xFF1E294B), CircleShape)
+                    .padding(20.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.WaterDrop,
+                    contentDescription = "Water-SF Icon",
+                    tint = Color.White,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Water-SF",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFFF8FAFC),
-                letterSpacing = 1.sp
+                letterSpacing = 1.5.sp
             )
 
             Text(
                 text = "Sistema de Gestión y Alertas",
                 fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
                 color = Color(0xFF94A3B8),
-                modifier = Modifier.padding(top = 4.dp, bottom = 32.dp)
+                modifier = Modifier.padding(top = 6.dp, bottom = 28.dp)
             )
 
             // Contenedor de formulario

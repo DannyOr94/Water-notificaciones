@@ -1,16 +1,12 @@
 package com.watersf.app.data.repository
 
-import android.content.Context
-import android.media.RingtoneManager
 import com.watersf.app.data.local.dao.NotificationDao
 import com.watersf.app.data.local.entity.toDomain
 import com.watersf.app.data.remote.api.WaterApiService
 import com.watersf.app.data.remote.dto.toEntity
 import com.watersf.app.data.security.EncryptedPrefsManager
 import com.watersf.app.domain.model.Notification
-import com.watersf.app.domain.model.UserType
 import com.watersf.app.domain.repository.NotificationRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -22,8 +18,7 @@ import javax.inject.Singleton
 class NotificationRepositoryImpl @Inject constructor(
     private val notificationDao: NotificationDao,
     private val apiService: WaterApiService,
-    private val prefsManager: EncryptedPrefsManager,
-    @ApplicationContext private val context: Context
+    private val prefsManager: EncryptedPrefsManager
 ) : NotificationRepository {
 
     private val _newNotificationFlow = MutableSharedFlow<Notification>(extraBufferCapacity = 64)
@@ -72,7 +67,6 @@ class NotificationRepositoryImpl @Inject constructor(
                 notificationDao.insertNotifications(entities)
 
                 if (hasNew && latestNewNotification != null && !isFirstSync) {
-                    playNotificationSound(context)
                     _newNotificationFlow.emit(latestNewNotification)
                 }
 
@@ -100,16 +94,6 @@ class NotificationRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Result.failure(e)
-        }
-    }
-
-    private fun playNotificationSound(context: Context) {
-        try {
-            val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(context, notificationUri)
-            ringtone.play()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }

@@ -1,10 +1,14 @@
 package com.watersf.app.presentation.notification
 
+import android.content.Context
+import android.media.MediaPlayer
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watersf.app.domain.model.Notification
 import com.watersf.app.domain.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +22,8 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NotificationListViewModel @Inject constructor(
-    private val repository: NotificationRepository
+    private val repository: NotificationRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -84,7 +89,20 @@ class NotificationListViewModel @Inject constructor(
         viewModelScope.launch {
             repository.newNotificationFlow.collect { notification ->
                 _newNotificationReceived.value = notification
+                playAlertSound()
             }
+        }
+    }
+
+    private fun playAlertSound() {
+        try {
+            val mediaPlayer = MediaPlayer.create(context, Settings.System.DEFAULT_NOTIFICATION_URI)
+            mediaPlayer?.start()
+            mediaPlayer?.setOnCompletionListener { mp ->
+                mp.release()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

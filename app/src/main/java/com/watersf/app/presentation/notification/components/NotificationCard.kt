@@ -30,6 +30,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.watersf.app.domain.model.Notification
 import com.watersf.app.domain.model.NotificationPriority
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,39 +175,18 @@ private fun formatNotificationMessage(notification: Notification): String {
     }
 }
 
-/**
- * Convierte strings de fecha ISO en formatos amigables
- */
 private fun formatDateTime(isoString: String): String {
     return try {
-        val datePart = isoString.substringBefore("T")
-        val timePart = isoString.substringAfter("T").substring(0, 5)
-        
-        // Mapea meses de inglés a español básico
-        val formattedDate = datePart.split("-").let { parts ->
-            if (parts.size == 3) {
-                val day = parts[2]
-                val month = when (parts[1]) {
-                    "01" -> "Ene"
-                    "02" -> "Feb"
-                    "03" -> "Mar"
-                    "04" -> "Abr"
-                    "05" -> "May"
-                    "06" -> "Jun"
-                    "07" -> "Jul"
-                    "08" -> "Ago"
-                    "09" -> "Sep"
-                    "10" -> "Oct"
-                    "11" -> "Nov"
-                    "12" -> "Dic"
-                    else -> parts[1]
-                }
-                "$day $month"
-            } else {
-                datePart
-            }
+        val normalized = if (!isoString.contains("Z") && !isoString.contains("+") && isoString.contains("T")) {
+            isoString + "Z"
+        } else {
+            isoString
         }
-        "$formattedDate, $timePart"
+        val instant = Instant.parse(normalized)
+        val crZone = ZoneId.of("America/Costa_Rica")
+        val crDateTime = instant.atZone(crZone)
+        val formatter = DateTimeFormatter.ofPattern("dd MMM, hh:mm a", Locale("es", "CR"))
+        crDateTime.format(formatter)
     } catch (e: Exception) {
         isoString
     }
