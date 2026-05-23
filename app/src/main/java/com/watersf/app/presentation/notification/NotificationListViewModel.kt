@@ -79,7 +79,7 @@ class NotificationListViewModel @Inject constructor(
     private fun startPolling() {
         viewModelScope.launch {
             while (true) {
-                sync()
+                sync(isBackground = true)
                 kotlinx.coroutines.delay(10000) // Polling cada 10 segundos
             }
         }
@@ -110,10 +110,12 @@ class NotificationListViewModel @Inject constructor(
         _newNotificationReceived.value = null
     }
 
-    fun sync() {
+    fun sync(isBackground: Boolean = false) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+            if (!isBackground) {
+                _isLoading.value = true
+                _error.value = null
+            }
 
             repository.syncNotifications()
                 .onSuccess {
@@ -121,10 +123,14 @@ class NotificationListViewModel @Inject constructor(
                 }
                 .onFailure { exception ->
                     _isOffline.value = true
-                    _error.value = exception.localizedMessage
+                    if (!isBackground) {
+                        _error.value = exception.localizedMessage
+                    }
                 }
 
-            _isLoading.value = false
+            if (!isBackground) {
+                _isLoading.value = false
+            }
         }
     }
 

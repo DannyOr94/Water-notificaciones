@@ -25,6 +25,8 @@ class NotificationRepositoryImpl @Inject constructor(
     override val newNotificationFlow: Flow<Notification> = _newNotificationFlow.asSharedFlow()
 
     private var isFirstSync = true
+    private var lastSessionToken: String? = null
+    private val seenNotificationIds = HashSet<String>()
 
     override fun getNotificationsFlow(
         priority: String?,
@@ -46,6 +48,17 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun syncNotifications(): Result<Unit> {
         return try {
+            // Detectar si la sesión cambió o se cerró para reiniciar el estado de sincronización
+            val currentToken = prefsManager.getToken()
+            if (currentToken != lastSessionToken) {
+                isFirstSync = true
+                seenNotificationIds.clear()
+                lastSessionToken = currentToken
+            }
+            if (currentToken == null) {
+                return Result.success(Unit)
+            }
+
             val response = apiService.getMyNotifications()
 
             if (response.isSuccessful && response.body() != null) {
@@ -56,11 +69,12 @@ class NotificationRepositoryImpl @Inject constructor(
                 var latestNewNotification: Notification? = null
 
                 for (entity in entities) {
-                    val alreadyExists = notificationDao.exists(entity.id)
-                    if (!alreadyExists) {
+                    val alreadySeen = seenNotificationIds.contains(entity.id) || notificationDao.exists(entity.id)
+                    if (!alreadySeen) {
                         hasNew = true
                         latestNewNotification = entity.toDomain()
                     }
+                    seenNotificationIds.add(entity.id)
                 }
 
                 // Guardamos en la base de datos local
