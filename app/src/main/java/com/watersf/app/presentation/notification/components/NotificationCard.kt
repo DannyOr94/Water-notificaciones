@@ -74,7 +74,7 @@ fun NotificationCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 90.dp)
+                .height(androidx.compose.foundation.layout.IntrinsicSize.Max)
         ) {
             // Indicador de prioridad vertical izquierdo
             Box(
