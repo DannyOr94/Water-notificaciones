@@ -16,7 +16,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun login(usernameOrEmail: String, password: String): Result<User> {
         return try {
-            // Enviamos la petición al NestJS local (192.168.100.232:3000)
+            // Enviamos la petición al backend (NestJS)
             val response = waterApiService.login(LoginRequest(usernameOrEmail, password))
 
             if (response.isSuccessful) {

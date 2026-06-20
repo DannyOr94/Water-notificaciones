@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,13 +14,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.WorkManager
 import com.watersf.app.data.security.EncryptedPrefsManager
 import com.watersf.app.presentation.auth.LoginScreen
 import com.watersf.app.presentation.notification.NotificationListScreen
+import com.watersf.app.presentation.theme.WaterSfTheme
 import com.watersf.app.service.NotificationForegroundService
 import com.watersf.app.worker.NotificationSyncWorker
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,48 +58,50 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            var isLoggedIn by remember { mutableStateOf(prefsManager.getToken() != null) }
+            WaterSfTheme {
+                var isLoggedIn by remember { mutableStateOf(prefsManager.getToken() != null) }
 
-            LaunchedEffect(isLoggedIn) {
-                val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
-                if (isLoggedIn) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
+                LaunchedEffect(isLoggedIn) {
+                    val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
+                    if (isLoggedIn) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            startForegroundService(serviceIntent)
+                        } else {
+                            startService(serviceIntent)
+                        }
                     } else {
-                        startService(serviceIntent)
+                        stopService(serviceIntent)
                     }
-                } else {
-                    stopService(serviceIntent)
                 }
-            }
 
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF0A0F1D) // Fondo azul oscuro global
-            ) {
-                if (isLoggedIn) {
-                    NotificationListScreen(
-                        viewModel = hiltViewModel(),
-                        onNotificationClick = { notificationId ->
-                            // Navegación adicional si fuera necesaria
-                        },
-                        onLogout = {
-                            val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
-                            stopService(serviceIntent)
-                            
-                            prefsManager.clearSession()
-                            notificationRepository.resetSyncState()
-                            isLoggedIn = false
-                        }
-                    )
-                } else {
-                    LoginScreen(
-                        viewModel = hiltViewModel(),
-                        onLoginSuccess = { user ->
-                            notificationRepository.resetSyncState()
-                            isLoggedIn = true
-                        }
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (isLoggedIn) {
+                        NotificationListScreen(
+                            viewModel = hiltViewModel(),
+                            onNotificationClick = { notificationId ->
+                                // Navegación adicional si fuera necesaria
+                            },
+                            onLogout = {
+                                val serviceIntent = Intent(this@MainActivity, NotificationForegroundService::class.java)
+                                stopService(serviceIntent)
+
+                                prefsManager.clearSession()
+                                notificationRepository.resetSyncState()
+                                isLoggedIn = false
+                            }
+                        )
+                    } else {
+                        LoginScreen(
+                            viewModel = hiltViewModel(),
+                            onLoginSuccess = { user ->
+                                notificationRepository.resetSyncState()
+                                isLoggedIn = true
+                            }
+                        )
+                    }
                 }
             }
         }

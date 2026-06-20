@@ -2,6 +2,7 @@ package com.watersf.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 import com.watersf.app.data.local.entity.NotificationEntity
+import com.watersf.app.domain.model.NotificationPriority
 
 data class NotificationDto(
     @SerializedName("id") val id: String,
@@ -26,7 +27,10 @@ fun NotificationDto.toEntity(): NotificationEntity {
         targetId = targetId,
         createdAt = createdAt,
         isRead = isRead,
-        priority = priority,
+        // [RISK-1] Normalizar al escribir: Room siempre guarda la forma canónica
+        // ("alta"/"media"/"baja") aunque el backend mande UPPERCASE, para no romper
+        // el ORDER BY ni el filtrado case-sensitive del DAO.
+        priority = NotificationPriority.fromString(priority).value,
         audience = audience
     )
 }

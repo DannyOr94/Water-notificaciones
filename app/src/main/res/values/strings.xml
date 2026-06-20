@@ -13,4 +13,19 @@
     <string name="empty_notifications_title">Sin notificaciones</string>
     <string name="empty_notifications_desc">No hay alertas que coincidan con tus filtros.</string>
     <string name="offline_mode_active">Modo sin conexión activo</string>
+
+    <!-- Pilar 3: pestañas de seguimiento de lectura -->
+    <string name="tab_new">Nuevos</string>
+    <string name="tab_unread">Sin leer</string>
+    <string name="tab_read">Leídos</string>
+
+    <!-- Pilar 3: agrupación -->
+    <string name="group_by">Agrupar:</string>
+    <string name="group_priority">Prioridad</string>
+    <string name="group_module">Módulo</string>
+
+    <!-- Pilar 3: alerta de acumulación -->
+    <string name="accumulation_title">Alertas sin atender</string>
+    <string name="accumulation_desc">Tenés %1$d reportes pendientes de revisar.</string>
+    <string name="accumulation_cta">Revisar</string>
 </resources>

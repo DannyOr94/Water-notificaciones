@@ -12,6 +12,9 @@ interface NotificationRepository {
         module: String? = null
     ): Flow<List<Notification>>
 
+    /** [REQ-3] Conteo reactivo de notificaciones no leídas (badge global). */
+    fun observeUnreadCount(): Flow<Int>
+
     suspend fun getNotificationById(id: String): Notification?
 
     suspend fun syncNotifications(): Result<Unit>
