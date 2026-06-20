@@ -21,9 +21,27 @@ class AuthRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 val body = response.body()
-                val responseToken = body?.token ?: body?.accessToken
+                
+                // Intentamos extraer el token del JSON
+                var responseToken = body?.token ?: body?.accessToken
 
-                if (body != null && !responseToken.isNullOrEmpty()) {
+                // Si no está en el JSON, lo extraemos de la cabecera Set-Cookie
+                if (responseToken.isNullOrEmpty()) {
+                    val cookies = response.headers().values("Set-Cookie")
+                    for (cookie in cookies) {
+                        if (cookie.contains("eyJ")) { // Los JWT siempre empiezan con eyJ
+                            val parts = cookie.split(";")
+                            val nameValuePair = parts[0]
+                            val valueIndex = nameValuePair.indexOf('=')
+                            if (valueIndex != -1) {
+                                responseToken = nameValuePair.substring(valueIndex + 1)
+                                break
+                            }
+                        }
+                    }
+                }
+
+                if (body?.user != null && !responseToken.isNullOrEmpty()) {
                     // 1. Guardamos el token real de la sesión
                     encryptedPrefsManager.saveToken(responseToken)
 
@@ -41,10 +59,11 @@ class AuthRepositoryImpl @Inject constructor(
 
                     Result.success(domainUser)
                 } else {
-                    Result.failure(Exception("El servidor no devolvió un token de acceso válido"))
+                    Result.failure(Exception("No se pudo extraer el token de las cabeceras (Cookies) o el cuerpo. JSON: $body"))
                 }
             } else {
-                Result.failure(Exception("Credenciales incorrectas. Verifique sus datos."))
+                val errorBodyString = response.errorBody()?.string() ?: "Sin detalles"
+                Result.failure(Exception("Error HTTP ${response.code()}: $errorBodyString"))
             }
         } catch (e: Exception) {
             Result.failure(e)

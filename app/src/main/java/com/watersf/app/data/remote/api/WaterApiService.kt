@@ -15,7 +15,7 @@ interface WaterApiService {
     @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
-    ): Response<LoginResponseDto>
+    ): Response<com.watersf.app.data.remote.dto.LoginResponseDto>
 
     @GET("notifications/me")
     suspend fun getMyNotifications(): Response<List<NotificationDto>>
