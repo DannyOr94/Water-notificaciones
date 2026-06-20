@@ -2,7 +2,6 @@ package com.watersf.app.presentation.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,17 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,17 +37,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.watersf.app.domain.model.User
+import com.watersf.app.presentation.theme.AppIcons
+import com.watersf.app.presentation.theme.BackgroundBase
+import com.watersf.app.presentation.theme.Dimens
+import com.watersf.app.presentation.theme.OnPrimary
+import com.watersf.app.presentation.theme.Outline
+import com.watersf.app.presentation.theme.Primary
+import com.watersf.app.presentation.theme.PrimaryBright
+import com.watersf.app.presentation.theme.Surface
+import com.watersf.app.presentation.theme.SurfaceVariant
+import com.watersf.app.presentation.theme.TextMuted
+import com.watersf.app.presentation.theme.TextPrimary
+import com.watersf.app.presentation.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,76 +84,72 @@ fun LoginScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0F1D)), // Fondo azul oscuro profundo
+            .background(BackgroundBase),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(Dimens.space6)
         ) {
-            // Header del App (Logo modernizado con gradiente premium)
+            // Header del App (logo con gradiente de marca)
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(90.dp)
+                    .size(Dimens.logoSize)
                     .clip(CircleShape)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
+                            colors = listOf(PrimaryBright, Primary)
                         )
                     )
-                    .border(2.dp, Color(0xFF1E294B), CircleShape)
-                    .padding(20.dp)
+                    .border(Dimens.borderThick, SurfaceVariant, CircleShape)
+                    .padding(Dimens.space5)
             ) {
                 Icon(
-                    imageVector = Icons.Default.WaterDrop,
+                    imageVector = AppIcons.brand,
                     contentDescription = "Water-SF Icon",
-                    tint = Color.White,
+                    tint = OnPrimary,
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.space4))
 
             Text(
                 text = "Water-SF",
-                fontSize = 34.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFFF8FAFC),
-                letterSpacing = 1.5.sp
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary
             )
 
             Text(
                 text = "Sistema de Gestión y Alertas",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF94A3B8),
-                modifier = Modifier.padding(top = 6.dp, bottom = 28.dp)
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = Dimens.space1, bottom = Dimens.space7)
             )
 
             // Contenedor de formulario
             Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF131C33)), // Azul pizarra
+                shape = RoundedCornerShape(Dimens.radiusLg),
+                colors = CardDefaults.cardColors(containerColor = Surface),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color(0xFF222D4A), RoundedCornerShape(16.dp))
+                    .border(Dimens.borderThin, Outline, RoundedCornerShape(Dimens.radiusLg))
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(Dimens.space6),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Iniciar Sesión",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF8FAFC),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextPrimary,
                         modifier = Modifier.align(Alignment.Start)
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(Dimens.space5))
 
                     // Campo de Usuario/Email
                     OutlinedTextField(
@@ -159,7 +157,7 @@ fun LoginScreen(
                         onValueChange = { usernameOrEmail = it },
                         label = { Text("Usuario o Correo") },
                         leadingIcon = {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF64748B))
+                            Icon(AppIcons.email, contentDescription = null, tint = TextMuted)
                         },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -170,20 +168,20 @@ fun LoginScreen(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color(0xFFF8FAFC),
-                            unfocusedTextColor = Color(0xFFF8FAFC),
-                            focusedContainerColor = Color(0xFF1E294B),
-                            unfocusedContainerColor = Color(0xFF131C33),
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF222D4A),
-                            focusedLabelColor = Color(0xFF38BDF8),
-                            unfocusedLabelColor = Color(0xFF64748B)
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceVariant,
+                            unfocusedContainerColor = Surface,
+                            focusedBorderColor = PrimaryBright,
+                            unfocusedBorderColor = Outline,
+                            focusedLabelColor = PrimaryBright,
+                            unfocusedLabelColor = TextMuted
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(Dimens.radiusSm),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Dimens.space4))
 
                     // Campo de Contraseña
                     OutlinedTextField(
@@ -191,12 +189,12 @@ fun LoginScreen(
                         onValueChange = { password = it },
                         label = { Text("Contraseña") },
                         leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF64748B))
+                            Icon(AppIcons.password, contentDescription = null, tint = TextMuted)
                         },
                         trailingIcon = {
-                            val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                            val image = if (passwordVisible) AppIcons.passwordShow else AppIcons.passwordHide
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(image, contentDescription = null, tint = Color(0xFF64748B))
+                                Icon(image, contentDescription = null, tint = TextMuted)
                             }
                         },
                         singleLine = true,
@@ -212,25 +210,25 @@ fun LoginScreen(
                             }
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color(0xFFF8FAFC),
-                            unfocusedTextColor = Color(0xFFF8FAFC),
-                            focusedContainerColor = Color(0xFF1E294B),
-                            unfocusedContainerColor = Color(0xFF131C33),
-                            focusedBorderColor = Color(0xFF38BDF8),
-                            unfocusedBorderColor = Color(0xFF222D4A),
-                            focusedLabelColor = Color(0xFF38BDF8),
-                            unfocusedLabelColor = Color(0xFF64748B)
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceVariant,
+                            unfocusedContainerColor = Surface,
+                            focusedBorderColor = PrimaryBright,
+                            unfocusedBorderColor = Outline,
+                            focusedLabelColor = PrimaryBright,
+                            unfocusedLabelColor = TextMuted
                         ),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(Dimens.radiusSm),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(Dimens.space6))
 
                     // Botón de ingresar / Carga
                     if (state is LoginState.Loading) {
                         CircularProgressIndicator(
-                            color = Color(0xFF38BDF8),
+                            color = PrimaryBright,
                             modifier = Modifier.size(36.dp)
                         )
                     } else {
@@ -240,30 +238,28 @@ fun LoginScreen(
                                 viewModel.login(usernameOrEmail, password)
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0284C7), // Azul principal
-                                contentColor = Color.White
+                                containerColor = Primary,
+                                contentColor = OnPrimary
                             ),
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(Dimens.radiusSm),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp)
                         ) {
                             Text(
                                 text = "INGRESAR",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
 
                     // Mensaje de Error
                     if (state is LoginState.Error) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(Dimens.space4))
                         Text(
                             text = (state as LoginState.Error).message,
-                            color = Color(0xFFF87171),
-                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )

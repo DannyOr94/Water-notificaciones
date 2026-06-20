@@ -10,13 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
@@ -25,13 +26,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.watersf.app.domain.model.Notification
-import com.watersf.app.domain.model.NotificationPriority
-import java.time.Instant
-import java.time.ZoneId
+import com.watersf.app.presentation.theme.AppIcons
+import com.watersf.app.presentation.theme.Dimens
+import com.watersf.app.presentation.theme.Outline
+import com.watersf.app.presentation.theme.OutlineStrong
+import com.watersf.app.presentation.theme.PrimaryBright
+import com.watersf.app.presentation.theme.Surface
+import com.watersf.app.presentation.theme.SurfaceVariant
+import com.watersf.app.presentation.theme.TextBody
+import com.watersf.app.presentation.theme.TextPrimary
+import com.watersf.app.presentation.theme.TextSecondary
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -42,33 +49,30 @@ fun NotificationCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Paleta de colores por prioridad adaptada al fondo azul oscuro
-    val (priorityColor, priorityBg) = when (item.priority) {
-        NotificationPriority.ALTA -> Color(0xFFF87171) to Color(0xFF3B1E1E)
-        NotificationPriority.MEDIA -> Color(0xFFFBBF24) to Color(0xFF3B2A1E)
-        NotificationPriority.BAJA -> Color(0xFF34D399) to Color(0xFF1E3B2E)
-    }
+    // Severidad centralizada en AppIcons (antes duplicada inline)
+    val priorityColor = AppIcons.colorForPriority(item.priority)
+    val priorityBg = AppIcons.containerForPriority(item.priority)
 
     // Etiqueta del módulo
     val moduleLabel = item.module.replaceFirstChar { it.uppercase() }
 
-    // Fondo según si es leída o no
-    val cardBg = if (item.isRead) Color(0xFF131C33) else Color(0xFF1E294B)
-    val borderTint = if (item.isRead) Color(0xFF222D4A) else Color(0xFF3B4D80)
+    // Fondo y borde según si es leída o no
+    val cardBg = if (item.isRead) Surface else SurfaceVariant
+    val borderTint = if (item.isRead) Outline else OutlineStrong
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp, horizontal = 12.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, borderTint, RoundedCornerShape(14.dp))
+            .padding(vertical = 6.dp, horizontal = Dimens.space3)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .border(Dimens.borderThin, borderTint, RoundedCornerShape(Dimens.radiusMd))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Dimens.radiusMd),
         colors = CardDefaults.cardColors(
             containerColor = cardBg
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (item.isRead) 0.dp else 4.dp
+            defaultElevation = if (item.isRead) Dimens.elevNone else Dimens.elevCard
         )
     ) {
         Row(
@@ -79,7 +83,7 @@ fun NotificationCard(
             // Indicador de prioridad vertical izquierdo
             Box(
                 modifier = Modifier
-                    .width(6.dp)
+                    .width(Dimens.priorityBarWidth)
                     .fillMaxHeight()
                     .background(priorityColor)
             )
@@ -87,21 +91,30 @@ fun NotificationCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp)
+                    .padding(Dimens.space4)
             ) {
-                // Header: Módulo y estado de lectura
+                // Header: Módulo (con icono semántico) y estado de lectura
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SuggestionChip(
                         onClick = {},
                         label = { Text(moduleLabel, style = MaterialTheme.typography.labelSmall) },
+                        icon = {
+                            Icon(
+                                imageVector = AppIcons.forModule(item.module),
+                                contentDescription = null,
+                                tint = priorityColor,
+                                modifier = Modifier.size(Dimens.iconSm)
+                            )
+                        },
                         colors = SuggestionChipDefaults.suggestionChipColors(
                             containerColor = priorityBg,
-                            labelColor = priorityColor
+                            labelColor = priorityColor,
+                            iconContentColor = priorityColor
                         ),
                         border = null,
-                        modifier = Modifier.height(24.dp)
+                        modifier = Modifier.height(Dimens.space7)
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -110,49 +123,48 @@ fun NotificationCard(
                     if (!item.isRead) {
                         Box(
                             modifier = Modifier
-                                .width(8.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(0xFF38BDF8)) // Cyan brillante
+                                .size(Dimens.unreadDot)
+                                .clip(RoundedCornerShape(Dimens.radiusPill))
+                                .background(PrimaryBright)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Nueva",
-                            color = Color(0xFF38BDF8),
+                            color = PrimaryBright,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimens.space2))
 
                 // Título
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (item.isRead) FontWeight.Normal else FontWeight.Bold,
-                    color = if (item.isRead) Color(0xFF94A3B8) else Color(0xFFF8FAF4)
+                    color = if (item.isRead) TextSecondary else TextPrimary
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Dimens.space1))
 
                 // Mensaje
                 val displayMessage = formatNotificationMessage(item)
                 Text(
                     text = displayMessage,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFCBD5E1),
+                    color = TextBody,
                     maxLines = 3
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimens.space2))
 
                 // Footer: Fecha
                 Text(
                     text = formatDateTime(item.createdAt),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF64748B)
+                    color = TextSecondary
                 )
             }
         }

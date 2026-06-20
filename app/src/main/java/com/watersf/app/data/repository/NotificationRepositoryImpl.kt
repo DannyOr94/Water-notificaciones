@@ -43,6 +43,10 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun observeUnreadCount(): Flow<Int> {
+        return notificationDao.observeUnreadCount()
+    }
+
     override suspend fun getNotificationById(id: String): Notification? {
         return notificationDao.getNotificationById(id)?.toDomain()
     }

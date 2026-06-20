@@ -1,27 +1,24 @@
 package com.watersf.app.presentation.notification
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.media.MediaPlayer
-import android.os.Build
-import android.provider.Settings
-import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watersf.app.domain.model.Notification
 import com.watersf.app.domain.repository.NotificationRepository
+import com.watersf.app.presentation.notification.model.NotificationAlertConfig
+import com.watersf.app.presentation.notification.model.NotificationGroupMode
+import com.watersf.app.presentation.notification.model.NotificationTab
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,32 +36,66 @@ class NotificationListViewModel @Inject constructor(
 
     // Filtros observables reactivos
     private val _filterModule = MutableStateFlow<String?>(null)
-    private val _filterIsRead = MutableStateFlow<Boolean?>(null)
     private val _filterPriority = MutableStateFlow<String?>(null)
+    // isRead lo gobierna la pestaña activa ([REQ-4.2]); arranca alineado a NUEVOS.
+    private val _filterIsRead = MutableStateFlow(NotificationTab.NUEVOS.isReadFilter)
+
+    // Pestaña activa ([REQ-4]) y modo de agrupación ([REQ-1]).
+    private val _activeTab = MutableStateFlow(NotificationTab.NUEVOS)
+    private val _groupMode = MutableStateFlow(NotificationGroupMode.PRIORITY)
 
     // Flujo para notificaciones entrantes como eventos de un solo uso
-    private val _newNotificationEvent = kotlinx.coroutines.flow.MutableSharedFlow<Notification>(extraBufferCapacity = 64)
+    private val _newNotificationEvent = MutableSharedFlow<Notification>(extraBufferCapacity = 64)
     val newNotificationEvent: Flow<Notification> = _newNotificationEvent
 
+    private data class NotifQuery(
+        val module: String?,
+        val isRead: Boolean?,
+        val priority: String?,
+        val tab: NotificationTab
+    )
+
     /**
-     * Une los flujos de filtros y carga reactivamente las notificaciones de Room.
+     * Une filtros + pestaña y carga reactivamente desde Room. La pestaña NUEVOS aplica
+     * además el filtro de recencia in-memory ([REQ-4.2]); el resto solo usa la query.
      */
-    private val _notifications = combine(
+    private val _displayedNotifications: Flow<List<Notification>> = combine(
         _filterModule,
         _filterIsRead,
-        _filterPriority
-    ) { module, isRead, priority ->
-        Triple(module, isRead, priority)
-    }.flatMapLatest { (module, isRead, priority) ->
-        repository.getNotificationsFlow(priority, isRead, module)
+        _filterPriority,
+        _activeTab
+    ) { module, isRead, priority, tab ->
+        NotifQuery(module, isRead, priority, tab)
+    }.flatMapLatest { query ->
+        repository.getNotificationsFlow(query.priority, query.isRead, query.module).map { list ->
+            if (query.tab == NotificationTab.NUEVOS) {
+                list.filter { NotificationAlertConfig.isWithinNewWindow(it.createdAt) }
+            } else {
+                list
+            }
+        }
     }
 
     /**
-     * Estado consolidado expuesto a Compose UI
+     * Estado consolidado expuesto a Compose UI. El badge ([unreadCount]) se deriva de
+     * [NotificationRepository.observeUnreadCount] (Flow de Room) para garantizar el
+     * incremento real 5→6 sin contador en memoria ([REQ-3.2], [INV-4]).
      */
-    val state: StateFlow<NotificationListState> = kotlinx.coroutines.flow.combine(
-        listOf(_isLoading, _notifications, _filterModule, _filterIsRead, _filterPriority, _isOffline, _error)
+    val state: StateFlow<NotificationListState> = combine(
+        listOf(
+            _isLoading,
+            _displayedNotifications,
+            _filterModule,
+            _filterIsRead,
+            _filterPriority,
+            _isOffline,
+            _error,
+            repository.observeUnreadCount(),
+            _activeTab,
+            _groupMode
+        )
     ) { array ->
+        @Suppress("UNCHECKED_CAST")
         NotificationListState(
             isLoading = array[0] as Boolean,
             notifications = array[1] as List<Notification>,
@@ -72,7 +103,10 @@ class NotificationListViewModel @Inject constructor(
             filterIsRead = array[3] as Boolean?,
             filterPriority = array[4] as String?,
             isOffline = array[5] as Boolean,
-            errorMessage = array[6] as String?
+            errorMessage = array[6] as String?,
+            unreadCount = array[7] as Int,
+            activeTab = array[8] as NotificationTab,
+            groupMode = array[9] as NotificationGroupMode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -126,21 +160,28 @@ class NotificationListViewModel @Inject constructor(
         }
     }
 
-    fun setFilterModule(module: String?) {
-        _filterModule.value = module
+    /** [REQ-4] Cambia la pestaña y alinea el filtro isRead que la respalda. */
+    fun setActiveTab(tab: NotificationTab) {
+        _activeTab.value = tab
+        _filterIsRead.value = tab.isReadFilter
     }
 
-    fun setFilterIsRead(isRead: Boolean?) {
-        _filterIsRead.value = isRead
+    /** [REQ-1] Cambia el modo de agrupación (presentacional). */
+    fun setGroupMode(mode: NotificationGroupMode) {
+        _groupMode.value = mode
+    }
+
+    fun setFilterModule(module: String?) {
+        _filterModule.value = module
     }
 
     fun setFilterPriority(priority: String?) {
         _filterPriority.value = priority
     }
 
+    /** Limpia solo los filtros secundarios (módulo/prioridad); la pestaña gobierna isRead. */
     fun clearFilters() {
         _filterModule.value = null
-        _filterIsRead.value = null
         _filterPriority.value = null
     }
 }
